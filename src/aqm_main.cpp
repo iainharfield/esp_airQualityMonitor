@@ -44,7 +44,8 @@ void publishResults();
 //*******************************************************************
 //functions that MUST exist here even if not used by this app.
 //*******************************************************************
-bool onMqttMessageAppExt(char *, char *, const AsyncMqttClientMessageProperties &, const size_t &, const size_t &, const size_t &);    // Required by template
+bool onMqttMessageAppExt(char *, char *, const AsyncMqttClientMessageProperties &, const size_t &, const size_t &, const size_t &); 
+bool onMqttMessageAppCntrlExt(char *topic, char *payload, const AsyncMqttClientMessageProperties &properties, const size_t &len, const size_t &index, const size_t &total);
 void appMQTTTopicSubscribe();
 void telnet_extension_1(char);      // Required by template
 void telnet_extension_2(char);      // Required by template
@@ -388,7 +389,13 @@ String createJSONmessage()
 //************************************************************
 bool onMqttMessageAppExt(char *topic, char *payload, const AsyncMqttClientMessageProperties &properties, const size_t &len, const size_t &index, const size_t &total)
 {
+    Serial.println("onMqttMessageAppExt: User exit enabling App to do stuff");
     return false;
+}
+bool onMqttMessageAppCntrlExt(char *topic, char *payload, const AsyncMqttClientMessageProperties &properties, const size_t &len, const size_t &index, const size_t &total)
+{
+  Serial.println("onMqttMessageAppCntrlExt: User exit enabling App to het Controller to do stuff");
+	return false;
 }
 //***********************************************************
 // Subscribe to application specific topics
