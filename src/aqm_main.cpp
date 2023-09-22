@@ -120,7 +120,7 @@ void setup(void)
     if (drd->detectDoubleReset())
     {
         configWiFi = true;
-        Serial.println("App: Double Reset detected");
+        mqttLog("App: Double Reset detected", REPORT_WARN ,true, true);
     }
 
     // Set this deviceName and Type
@@ -153,13 +153,13 @@ void setup(void)
     // Setup SHT3x
     while (sht3x.begin() != 0) 
     {
-      Serial.println("Failed to initialize the chip, please confirm the chip connection");
+      mqttLog("App: Failed to initialize SHT3x sensor, Confirm the chip connection.", REPORT_ERROR ,true, true);
       delay(1000);
     }   
 
   if(!sht3x.softReset())
   {
-    Serial.println("Failed to reset the chip");
+    mqttLog("App: Failed to reset the SHT3x sensor chip.", REPORT_ERROR ,true, true);
   }
   else
   {
@@ -205,7 +205,7 @@ void getSHT3xReadings()
 void readPMS()
 {
     readData(); // read the data from PMS
-    Serial.println("Put PSM to sleep.");
+    mqttLog("App: Put PSM to sleep.", REPORT_INFO ,true, true);
     if (softControl) { pms.sleep(); }
     else {digitalWrite(PMSRST, LOW);}
     
@@ -214,7 +214,7 @@ void readPMS()
 void wakeupPMS()
 {
     //readData();
-    Serial.println("Warmup PSM and start 30s timer before reading.");
+    mqttLog("App: Warmup PSM and start 30s timer before reading.", REPORT_INFO ,true, true);
     //readData();  // this should fail !
     if (softControl) 
     {
@@ -232,15 +232,14 @@ String readData()
   PMS::DATA data;
 
   // Clear buffer (removes potentially old data) before read. Some data could have been also sent before switching to passive mode.
-  while (Serial.available()) { Serial.read(); }
-  Serial.println("App: read PMS5003.");
-
-  //Serial.println("Send read request...");
-
+  while (Serial.available()) 
+  { 
+    Serial.read(); 
+  }
+  mqttLog("App: Read PMS5003 DATA.", REPORT_INFO ,true, true);
   pms.requestRead();
-  delay(300);
+  delay(300);           // FIXTHIS : Time to read data into buffer - is this needed?
   
-
   //while (readPMSdata(&pmsSerial) == false) // fixthis - need to exit
   if (readPMSdata(&pmsSerial) == true) 
   {
@@ -270,12 +269,10 @@ String readData()
   }
   else
   {
-    Serial.println("......No data.......");
+    mqttLog("App: No data received from PMS5003", REPORT_INFO ,true, true);
     return "No Data";  //FIXTHIS
   }
 }
-
-
 
 boolean readPMSdata(Stream *s) 
 {
@@ -304,15 +301,15 @@ boolean readPMSdata(Stream *s)
   for (uint8_t i=0; i<30; i++) {
     sum += buffer[i];
   }
-  /*
-  // debugging
-  Serial.println("Debug data");
-  for (uint8_t i=2; i<32; i++) {
-    Serial.print("0x"); Serial.print(buffer[i], HEX); Serial.print(", ");
-  }
-  Serial.println();
+  // FIXTHIS complete
+  // PMS5003 debugging
+  mqttLog("App: PMS5003 debug data start .......", REPORT_DEBUG ,true, true);
+  //for (uint8_t i=2; i<32; i++) {
+  //  Serial.print("0x"); Serial.print(buffer[i], HEX); Serial.print(", ");
+  //}
+  mqttLog("App: PMS5003 debug data end .......", REPORT_DEBUG ,true, true);
   //end debugging
-  */
+  
   // The data comes in endian'd, this solves it so it works on all platforms
   uint16_t buffer_u16[15];
   for (uint8_t i=0; i<15; i++) 
@@ -324,11 +321,11 @@ boolean readPMSdata(Stream *s)
   // put it into struct :)
   memcpy((void *)&psm5003data, (void *)buffer_u16, 30);
  
-  if (sum != psm5003data.checksum) {
-    Serial.println("Checksum failure");
+  if (sum != psm5003data.checksum) 
+  {
+    mqttLog("App: PMS5003 read data Checksum failure", REPORT_INFO ,true, true);
     return false;
   }
-  Serial.println("returning true");
   return true;
 }
 
@@ -374,9 +371,10 @@ String createJSONmessage()
   doc["particles50"] = psm5003data.particles_50um;
   doc["particles100"] = psm5003data.particles_100um;
 
-  serializeJsonPretty(doc, Serial);
-  Serial.println();
+  //serializeJsonPretty(doc, Serial);
+  //Serial.println();
   serializeJson(doc, output);
+  mqttLog(output.c_str(), REPORT_INFO ,true, true);
   return(output);
 }
 
@@ -457,10 +455,10 @@ void telnet_extensionHelp(char c)
     printTelnet((String) "x\t\tSome description");
 }
 
-void drdDetected()
-{
-    Serial.println("Double reset detected");
-}
+//void drdDetected()
+//{
+//    Serial.println("Double reset detected");
+//}
 
 //************************************************************************
 // Implement any Application Specific TOD behaviour
@@ -474,7 +472,7 @@ void drdDetected()
 //************************************************************************
 void processCntrlTOD_Ext()
 {
-    mqttLog("Application Processing Controller TOD functions", true, true);
+    mqttLog("Application Processing Controller TOD functions", REPORT_INFO ,true, true);
     // Call the TOD function for each controller crteated by this app
     //USCntrlState.processCntrlTOD_Ext();
 }
