@@ -120,7 +120,7 @@ void setup(void)
     if (drd->detectDoubleReset())
     {
         configWiFi = true;
-        mqttLog("App: Double Reset detected", REPORT_WARN ,true, true);
+        mqttLog("App: Double Reset detected", REPORT_WARN ,false, true);  //No MQTT connection at this stage
     }
 
     // Set this deviceName and Type
@@ -193,13 +193,9 @@ void getSHT3xReadings()
 
   sht3xTemp = sht3x.getTemperatureC();
   sht3xHumidity = sht3x.getHumidityRH();
-  Serial.print("Ambient Temperature(°C):");
-  Serial.print(sht3xTemp);
-  Serial.print(" ");
-  Serial.print("Relative Humidity(%):");
-  Serial.println(sht3xHumidity);
+  sprintf(logString, "%s %f, %s %f", "Ambient Temperature(°C):", sht3xTemp, "Relative Humidity(%):", sht3xHumidity);
+  mqttLog(logString, REPORT_INFO ,true, true);
 
-  //publishResults();
 }
 
 void readPMS()
@@ -276,7 +272,7 @@ String readData()
 
 boolean readPMSdata(Stream *s) 
 {
-  Serial.println("Reading data...");
+  mqttLog("Reading PMS5003 data:", REPORT_INFO ,true, true);
 
   if (! s->available()) {
     return false;
@@ -372,9 +368,11 @@ String createJSONmessage()
   doc["particles100"] = psm5003data.particles_100um;
 
   //serializeJsonPretty(doc, Serial);
+  serializeJsonPretty(doc, output);
+  mqttLog(output.c_str(), REPORT_INFO ,true, true);
   //Serial.println();
   serializeJson(doc, output);
-  mqttLog(output.c_str(), REPORT_INFO ,true, true);
+  //mqttLog(output.c_str(), REPORT_INFO ,true, true);
   return(output);
 }
 
@@ -387,12 +385,12 @@ String createJSONmessage()
 //************************************************************
 bool onMqttMessageAppExt(char *topic, char *payload, const AsyncMqttClientMessageProperties &properties, const size_t &len, const size_t &index, const size_t &total)
 {
-    Serial.println("onMqttMessageAppExt: User exit enabling App to do stuff");
-    return false;
+  mqttLog("onMqttMessageAppExt: User exit enabling App to do stuff", REPORT_DEBUG ,true, true);
+  return false;
 }
 bool onMqttMessageAppCntrlExt(char *topic, char *payload, const AsyncMqttClientMessageProperties &properties, const size_t &len, const size_t &index, const size_t &total)
 {
-  Serial.println("onMqttMessageAppCntrlExt: User exit enabling App to het Controller to do stuff");
+  mqttLog("onMqttMessageAppCntrlExt: User exit enabling App to het Controller to do stuff", REPORT_DEBUG ,true, true);
 	return false;
 }
 //***********************************************************
@@ -454,11 +452,6 @@ void telnet_extensionHelp(char c)
 {
     printTelnet((String) "x\t\tSome description");
 }
-
-//void drdDetected()
-//{
-//    Serial.println("Double reset detected");
-//}
 
 //************************************************************************
 // Implement any Application Specific TOD behaviour
