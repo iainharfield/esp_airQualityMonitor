@@ -1,9 +1,13 @@
 // Useful sites:
 // https://uk-air.defra.gov.uk/air-pollution/daqi?view=more-info&pollutant=pm10#pollutant
-
+//
 // https://wiki.dfrobot.com/SHT31_Temperature_Humidity_Sensor_Weatherproof_SKU_SEN0385
-
-
+//
+// Sensors used:
+//  . FS400-SHTXX
+//  . PMS5003
+//
+//
 
 #include <ArduinoOTA.h>
 #include <Ticker.h>
