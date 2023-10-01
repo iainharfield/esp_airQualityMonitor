@@ -36,7 +36,7 @@
 void getSHT3xReadings();
 void readPMS();
 void wakeupPMS();
-String readData();
+bool readData();
 boolean readPMSdata(Stream *s);
 String createJSONmessage();
 void publishResults();
@@ -135,7 +135,7 @@ void setup(void)
     pinMode(PMSRST, OUTPUT);
     
     pmsSerial.begin(9600);
-    pms.passiveMode();
+    pms.passiveMode();  //Passive mode. In this mode sensor would send serial data to the host only for request.
 
     // Default state after sensor power, but undefined after ESP restart e.g. by OTA flash, so we have to manually wake up the sensor for sure.
     // Some logs from bootloader is sent via Serial port to the sensor after power up. This can cause invalid first read or wake up so be patient and wait for next read cycle.
@@ -167,7 +167,7 @@ void setup(void)
     Serial.println(sht3x.readSerialNumber());
   }
   sht3xReadTimer.attach(SHTREAD,getSHT3xReadings); // read every xx second
-  aqmPublish.attach(AQMPUBLISH,publishResults);
+  //aqmPublish.attach(AQMPUBLISH,publishResults);
 }
 
 /*
@@ -202,8 +202,15 @@ void readPMS()
 {
     readData(); // read the data from PMS
     mqttLog("App: Put PSM to sleep.", REPORT_INFO ,true, true);
-    if (softControl) { pms.sleep(); }
-    else {digitalWrite(PMSRST, LOW);}
+    if (softControl) 
+    { 
+      pms.sleep(); 
+    }
+    else 
+    {
+      mqttLog("App: Set PMS Reset Low - Sleep.", REPORT_DEBUG ,true, true);
+      digitalWrite(PMSRST, LOW);
+    }
     
     pmsDelay.once(PMSSLEEP, wakeupPMS);  //FIX THIS PSM PMS
 }
@@ -218,12 +225,14 @@ void wakeupPMS()
     }
     else 
     {
+      mqttLog("App: Set PMS Reset high - wake up.", REPORT_DEBUG ,true, true);
       digitalWrite(PMSRST, HIGH);
     }
     
     pmsRead.once(PMSWARMUP,readPMS);
 }
-String readData()
+
+bool readData()
 {
   PMS::DATA data;
 
@@ -233,13 +242,14 @@ String readData()
     Serial.read(); 
   }
   mqttLog("App: Read PMS5003 DATA.", REPORT_INFO ,true, true);
-  pms.requestRead();
-  delay(300);           // FIXTHIS : Time to read data into buffer - is this needed?
+  pms.requestRead();    // Request read in Passive Mode.
+  delay(1000);           // FIXTHIS : Time to read data into buffer? Without this I get intermittent reads.
   
   //while (readPMSdata(&pmsSerial) == false) // fixthis - need to exit
   if (readPMSdata(&pmsSerial) == true) 
   {
-    return (createJSONmessage());
+    publishResults();
+    return false;
     /*
     // reading data was successful!
     Serial.println();
@@ -265,8 +275,8 @@ String readData()
   }
   else
   {
-    mqttLog("App: No data received from PMS5003", REPORT_INFO ,true, true);
-    return "No Data";  //FIXTHIS
+    mqttLog("App: No data received from PMS5003", REPORT_WARN ,true, true);
+    return true;  
   }
 }
 
@@ -300,9 +310,14 @@ boolean readPMSdata(Stream *s)
   // FIXTHIS complete
   // PMS5003 debugging
   mqttLog("App: PMS5003 debug data start .......", REPORT_DEBUG ,true, true);
-  //for (uint8_t i=2; i<32; i++) {
-  //  Serial.print("0x"); Serial.print(buffer[i], HEX); Serial.print(", ");
-  //}
+  char str [MAX_LOGSTRING_LENGTH];
+  sprintf(str,"%s","");
+  for (uint8_t i=2; i<32; i++) {
+    sprintf(str,"%s0x%x%s",str, buffer[i], ", ");
+    Serial.print("0x"); Serial.print(buffer[i], HEX); Serial.print(", ");
+  }
+   Serial.println("");
+  mqttLog(str, REPORT_DEBUG ,true, true);
   mqttLog("App: PMS5003 debug data end .......", REPORT_DEBUG ,true, true);
   //end debugging
   
