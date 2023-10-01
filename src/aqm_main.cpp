@@ -314,9 +314,9 @@ boolean readPMSdata(Stream *s)
   sprintf(str,"%s","");
   for (uint8_t i=2; i<32; i++) {
     sprintf(str,"%s0x%x%s",str, buffer[i], ", ");
-    Serial.print("0x"); Serial.print(buffer[i], HEX); Serial.print(", ");
+    //Serial.print("0x"); Serial.print(buffer[i], HEX); Serial.print(", ");
   }
-   Serial.println("");
+  //Serial.println("");
   mqttLog(str, REPORT_DEBUG ,true, true);
   mqttLog("App: PMS5003 debug data end .......", REPORT_DEBUG ,true, true);
   //end debugging
