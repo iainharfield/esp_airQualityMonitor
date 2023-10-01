@@ -151,7 +151,6 @@ void setup(void)
     {
       digitalWrite(PMSRST, HIGH);
     }
-
     pmsRead.once(PMSWARMUP,readPMS);
 
     // Setup SHT3x
@@ -174,9 +173,9 @@ void setup(void)
   //aqmPublish.attach(AQMPUBLISH,publishResults);
 }
 
-/*
- * Main function, get and show the temperature
- */
+//*************************************************
+// Main function, get and show the temperature
+//*************************************************
 void loop(void)
 { 
     drd->loop();
@@ -232,7 +231,6 @@ void wakeupPMS()
       mqttLog("App: Set PMS Reset high - wake up.", REPORT_DEBUG ,true, true);
       digitalWrite(PMSRST, HIGH);
     }
-    
     pmsRead.once(PMSWARMUP,readPMS);
 }
 
