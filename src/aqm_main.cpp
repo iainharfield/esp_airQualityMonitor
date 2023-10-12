@@ -41,6 +41,7 @@ void getSHT3xReadings();
 void readPMS();
 void wakeupPMS();
 bool readData();
+void resetPMS();
 boolean readPMSdata(Stream *s);
 String createJSONmessage();
 void publishResults();
@@ -86,7 +87,8 @@ float sht3xHumidity = 0;
 //****************
 #define UARTRX 34       // goes to PSM5003 TXD, GPIO34 , A2
 #define UARTTX 26       // goes to PSM5003 RXD, GPIO26 , A0 Outout capable pin
-#define PMSRST 13       // PSM wake/sleep control
+#define PMSSET 13       // PSM SET - wake/sleep control
+#define PMSRST 27       // PSM RESET
 #define PMSWARMUP 30    // warmup time in seconds
 #define PMSSLEEP  120   // put senor to sleep, to increase life time in sconds 
 #define AQMPUBLISH 60   // Publish results timer
@@ -136,7 +138,9 @@ void setup(void)
 
     // Setup PMS5003
     pinMode(UARTTX, OUTPUT);
+    pinMode(PMSSET, OUTPUT);
     pinMode(PMSRST, OUTPUT);
+    digitalWrite(PMSRST, HIGH);
     
     pmsSerial.begin(9600);
     pms.passiveMode();  //Passive mode. In this mode sensor would send serial data to the host only for request.
@@ -149,7 +153,7 @@ void setup(void)
     }
     else
     {
-      digitalWrite(PMSRST, HIGH);
+      digitalWrite(PMSSET, HIGH);
     }
     pmsRead.once(PMSWARMUP,readPMS);
 
@@ -211,8 +215,8 @@ void readPMS()
     }
     else 
     {
-      mqttLog("App: Set PMS Reset Low - Sleep.", REPORT_DEBUG ,true, true);
-      digitalWrite(PMSRST, LOW);
+      mqttLog("App: Set PMS SET pin Low - Sleep.", REPORT_DEBUG ,true, true);
+      digitalWrite(PMSSET, LOW);
     }
     
     pmsDelay.once(PMSSLEEP, wakeupPMS);  //FIX THIS PSM PMS
@@ -228,20 +232,28 @@ void wakeupPMS()
     }
     else 
     {
-      mqttLog("App: Set PMS Reset high - wake up.", REPORT_DEBUG ,true, true);
-      digitalWrite(PMSRST, HIGH);
+      mqttLog("App: Set PMS SET high - wake up.", REPORT_DEBUG ,true, true);
+      digitalWrite(PMSSET, HIGH);
     }
     pmsRead.once(PMSWARMUP,readPMS);
 }
+
+void resetPMS()
+{
+  digitalWrite(PMSRST, LOW);
+  delay(500);
+  digitalWrite(PMSRST, HIGH);
+}
+
 
 bool readData()
 {
   PMS::DATA data;
 
   // Clear buffer (removes potentially old data) before read. Some data could have been also sent before switching to passive mode.
-  while (Serial.available()) 
+  while (pmsSerial.available()) 
   { 
-    Serial.read(); 
+    pmsSerial.read(); 
   }
   mqttLog("App: Read PMS5003 DATA.", REPORT_INFO ,true, true);
   pms.requestRead();    // Request read in Passive Mode.
@@ -277,7 +289,10 @@ bool readData()
   }
   else
   {
-    mqttLog("App: No data received from PMS5003", REPORT_WARN ,true, true);
+    mqttLog("App: No data received from PMS5003. Reset PMS", REPORT_WARN ,true, true);
+    // Dont understand why this happens - reset PMS
+    resetPMS();
+
     return true;  
   }
 }
@@ -286,18 +301,24 @@ boolean readPMSdata(Stream *s)
 {
   mqttLog("Reading PMS5003 data:", REPORT_INFO ,true, true);
 
-  if (! s->available()) {
+  if (! s->available()) 
+  {
+    mqttLog("PMS5003 data stream unavailable:", REPORT_WARN ,true, true);
     return false;
   }
   
   // Read a byte at a time until we get to the special '0x42' start-byte
-  if (s->peek() != 0x42) {
+  if (s->peek() != 0x42) 
+  {
     s->read();
+    mqttLog("PMS5003 0x42 start-byte not found:", REPORT_WARN ,true, true);
     return false;
   }
  
   // Now read all 32 bytes
-  if (s->available() < 32) {
+  if (s->available() < 32) 
+  {
+    mqttLog("PMS5003 less than 32 bytes not read:", REPORT_WARN ,true, true);
     return false;
   }
     
@@ -459,7 +480,13 @@ void telnet_extension_1(char c)
 //*****************************************************
 void telnet_extension_2(char c)
 {
-    printTelnet((String)c);
+    //printTelnet((String)c);
+    switch (c) {
+          	case 'R':
+              printTelnet("\nRESET PMS5003");
+              resetPMS();
+            break;
+    }      	
 }
 
 //************************************************************************************************
@@ -467,7 +494,8 @@ void telnet_extension_2(char c)
 //************************************************************************************************
 void telnet_extensionHelp(char c)
 {
-    printTelnet((String) "x\t\tSome description");
+    printTelnet((String) "\nApplication Specific commands....");
+    printTelnet((String) "R\t\tRESET PMS5003 sensor");
 }
 
 //************************************************************************
