@@ -392,9 +392,9 @@ String createJSONmessage()
   StaticJsonDocument<270> doc;
   doc["temprature"] = sht3xTemp;
   doc["humidity"] = sht3xHumidity;
-  doc["standadPM10"] = psm5003data.pm10_standard;
-  doc["standadPM25"] = psm5003data.pm25_standard;
-  doc["standadPM100"] = psm5003data.pm100_standard;
+  doc["standardPM10"] = psm5003data.pm10_standard;
+  doc["standardPM25"] = psm5003data.pm25_standard;
+  doc["standardPM100"] = psm5003data.pm100_standard;
   doc["environmentalPM10"] = psm5003data.pm10_env;
   doc["environmentalPM25"] = psm5003data.pm25_env;
   doc["environmentalPM100"] = psm5003data.pm100_env;
