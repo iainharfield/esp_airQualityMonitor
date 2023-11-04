@@ -388,9 +388,9 @@ void publishResults()
 
 String createJSONmessage()
 {
-  String output;
+  String output = "";
   StaticJsonDocument<270> doc;
-  doc["temprature"] = sht3xTemp;
+  doc["temperature"] = sht3xTemp;
   doc["humidity"] = sht3xHumidity;
   doc["standardPM10"] = psm5003data.pm10_standard;
   doc["standardPM25"] = psm5003data.pm25_standard;
@@ -409,6 +409,7 @@ String createJSONmessage()
   serializeJsonPretty(doc, output);
   mqttLog(output.c_str(), REPORT_INFO ,true, true);
   //Serial.println();
+  output = "";
   serializeJson(doc, output);
   //mqttLog(output.c_str(), REPORT_INFO ,true, true);
   return(output);
