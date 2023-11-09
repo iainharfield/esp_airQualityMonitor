@@ -197,9 +197,17 @@ void loop(void)
 void getSHT3xReadings()
 {
   char logString[MAX_LOGSTRING_LENGTH];
+  char str[10];
+  float x;
+  
+  x = sht3x.getTemperatureC();
+  dtostrf(x, 5, 1, str);
+  sht3xTemp = atof(str);
 
-  sht3xTemp = sht3x.getTemperatureC();
-  sht3xHumidity = sht3x.getHumidityRH();
+  x = sht3x.getHumidityRH();
+  dtostrf(x, 5, 1, str);
+  sht3xHumidity = atof(str);
+
   sprintf(logString, "%s %f, %s %f", "Ambient Temperature(°C):", sht3xTemp, "Relative Humidity(%):", sht3xHumidity);
   mqttLog(logString, REPORT_INFO ,true, true);
 
@@ -407,11 +415,11 @@ String createJSONmessage()
 
   //serializeJsonPretty(doc, Serial);
   serializeJsonPretty(doc, output);
-  mqttLog(output.c_str(), REPORT_INFO ,true, true);
+  //mqttLog(output.c_str(), REPORT_INFO ,true, true);
   //Serial.println();
   output = "";
   serializeJson(doc, output);
-  //mqttLog(output.c_str(), REPORT_INFO ,true, true);
+  mqttLog(output.c_str(), REPORT_INFO ,true, true);
   return(output);
 }
 
