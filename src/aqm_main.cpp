@@ -45,6 +45,7 @@ void resetPMS();
 boolean readPMSdata(Stream *s);
 String createJSONmessage();
 void publishResults();
+float calculateAQI(float);
 
 //*******************************************************************
 //functions that MUST exist here even if not used by this app.
@@ -197,18 +198,19 @@ void loop(void)
 void getSHT3xReadings()
 {
   char logString[MAX_LOGSTRING_LENGTH];
-  char str[10];
-  float x;
-  
-  x = sht3x.getTemperatureC();
-  dtostrf(x, 5, 1, str);
-  sht3xTemp = atof(str);
+  //char str[10];
+  //float x;
 
-  x = sht3x.getHumidityRH();
-  dtostrf(x, 5, 1, str);
-  sht3xHumidity = atof(str);
+  sht3xTemp = sht3x.getTemperatureC();
+  //dtostrf(x, 5, 1, str);
+  //sht3xTemp = atof(str);
+
+  sht3xHumidity = sht3x.getHumidityRH();
+  //dtostrf(x, 5, 1, str);
+  //sht3xHumidity = atof(str);
 
   sprintf(logString, "%s %f, %s %f", "Ambient Temperature(°C):", sht3xTemp, "Relative Humidity(%):", sht3xHumidity);
+  
   mqttLog(logString, REPORT_INFO ,true, true);
 
 }
@@ -412,6 +414,7 @@ String createJSONmessage()
   doc["particles25"] = psm5003data.particles_25um;
   doc["particles50"] = psm5003data.particles_50um;
   doc["particles100"] = psm5003data.particles_100um;
+  doc["AQI"] = calculateAQI(psm5003data.pm25_standard);
 
   //serializeJsonPretty(doc, Serial);
   serializeJsonPretty(doc, output);
@@ -422,6 +425,36 @@ String createJSONmessage()
   mqttLog(output.c_str(), REPORT_INFO ,true, true);
   return(output);
 }
+
+
+//float pm25Value = 50.0;  // Replace this with your actual PM2.5 value
+
+//float aqi = calculateAQI(pm25Value);
+//Serial.print("AQI: ");
+//Serial.println(aqi);
+
+float calculateAQI(float pm25) {
+  // Define AQI breakpoints and corresponding concentration ranges
+  float breakpoints[] = {0, 12, 35.4, 55.4, 150.4, 250.4, 350.4, 500.4};
+  float concentrations[] = {0, 12, 35.4, 55.4, 150.4, 250.4, 350.4, 500.4};
+
+  // Determine the AQI category
+  int i;
+  for (i = 0; i < 7; i++) {
+    if (pm25 <= concentrations[i+1]) {
+      break;
+    }
+  }
+
+  // Use the AQI formula to calculate AQI
+  float aqi = ((breakpoints[i+1] - breakpoints[i]) / (concentrations[i+1] - concentrations[i])) * (pm25 - concentrations[i]) + breakpoints[i];
+
+  return aqi;
+}   
+
+
+
+
 
 
 
@@ -523,3 +556,5 @@ void processCntrlTOD_Ext()
     // Call the TOD function for each controller crteated by this app
     //USCntrlState.processCntrlTOD_Ext();
 }
+
+
