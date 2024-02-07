@@ -392,7 +392,7 @@ void publishResults()
     //printTelnet((String)logString); 
   */
     output = createJSONmessage();
-    mqttClient.publish(oh3StateValue, 0, true, output.c_str());
+    mqttClient.publish(oh3StateValue, 0, false, output.c_str()); // QOS == 0, Retain == false
 } 
 
 
