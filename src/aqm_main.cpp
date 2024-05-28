@@ -12,7 +12,9 @@
 #include <ArduinoOTA.h>
 #include <Ticker.h>
 #include <ArduinoJson.h>
-#include <AsyncMqttClient_Generic.hpp>
+
+//#include <AsyncMqttClient_Generic.hpp>
+#include <AsyncMqttClient.h> 
 
 #include <DFRobot_SHT3x.h>
 #if defined(ESP32)
